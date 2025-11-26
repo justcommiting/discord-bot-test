@@ -53,3 +53,6 @@ data/config.local.json
 
 # Guild-specific configuration (runtime data)
 data/guilds/
+
+# Warnings data (runtime data)
+data/warnings/

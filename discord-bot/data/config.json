@@ -24,6 +24,27 @@
         },
         "fun": {
             "enabled": true
+        },
+        "automod": {
+            "enabled": true,
+            "spam_threshold": 5,
+            "spam_window_seconds": 10,
+            "duplicate_threshold": 3,
+            "timeout_duration_minutes": 5,
+            "warnings_for_kick": 3,
+            "warnings_for_ban": 5,
+            "exempt_roles": ["Admin", "Moderator"],
+            "log_actions": true
+        },
+        "antiraid": {
+            "enabled": true,
+            "join_threshold": 10,
+            "join_window_seconds": 60,
+            "min_account_age_days": 7,
+            "auto_lockdown": true,
+            "lockdown_duration_minutes": 30,
+            "kick_suspicious_on_raid": false,
+            "alert_owners": true
         }
     }
 }
