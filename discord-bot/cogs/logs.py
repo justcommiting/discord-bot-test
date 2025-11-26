@@ -8,13 +8,14 @@ This cog logs important server events to a designated channel, including:
 
 HOW TO CUSTOMIZE:
 -----------------
-- Change the log channel name in data/config.json under features.logs.log_channel_name
+- Use /setlogchannel or !setlogchannel to configure the log channel per-guild
 - Add or remove event handlers as needed
 - Modify embed colors and formatting to match your server theme
 """
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 from datetime import datetime, timezone
 from typing import Optional
 
@@ -23,6 +24,7 @@ import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 from config import config
+from guild_config import guild_config
 
 
 class Logs(commands.Cog):
@@ -39,11 +41,14 @@ class Logs(commands.Cog):
         """Initialize the logs cog."""
         self.bot = bot
         self.config = config.get_feature_config("logs")
-        self.log_channel_name = self.config.get("log_channel_name", "bot-logs")
+        self.fallback_channel_name = self.config.get("log_channel_name", "bot-logs")
     
     def _get_log_channel(self, guild: discord.Guild) -> Optional[discord.TextChannel]:
         """
         Get the log channel for a guild.
+        
+        First checks for per-guild configured channel, then falls back to
+        channel name from config.json.
         
         Args:
             guild: The guild to get the log channel for
@@ -51,7 +56,15 @@ class Logs(commands.Cog):
         Returns:
             The log channel or None if not found
         """
-        return discord.utils.get(guild.text_channels, name=self.log_channel_name)
+        # First try per-guild configured channel ID
+        channel_id = guild_config.get_log_channel_id(guild.id)
+        if channel_id:
+            channel = guild.get_channel(channel_id)
+            if channel and isinstance(channel, discord.TextChannel):
+                return channel
+        
+        # Fallback to channel name from config
+        return discord.utils.get(guild.text_channels, name=self.fallback_channel_name)
     
     async def _send_log(
         self,
@@ -190,7 +203,8 @@ class Logs(commands.Cog):
         
         await self._send_log(before.guild, embed)
     
-    @commands.command(name="setlogchannel")
+    @commands.hybrid_command(name="setlogchannel", description="Set the log channel for this server")
+    @app_commands.describe(channel="The channel to send logs to (defaults to current channel)")
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def set_log_channel(
@@ -201,37 +215,64 @@ class Logs(commands.Cog):
         """
         Set the log channel for this server.
         
-        Usage: !setlogchannel [#channel]
+        Usage: !setlogchannel [#channel] or /setlogchannel [channel]
         If no channel is provided, uses the current channel.
         
-        Note: This changes the channel used for logging in this server
-        but doesn't persist after bot restart. For permanent changes,
-        modify the config.json file.
+        This setting persists across bot restarts.
         """
         target_channel = channel or ctx.channel
         
-        embed = discord.Embed(
-            title="📋 Log Channel",
-            color=discord.Color.green(),
-            description=(
-                f"Logs will be sent to {target_channel.mention}\n\n"
-                f"**Note:** To make this change permanent, update the "
-                f"`log_channel_name` in `data/config.json` to `{target_channel.name}`"
-            )
-        )
+        # Verify it's a text channel
+        if not isinstance(target_channel, discord.TextChannel):
+            await ctx.send("❌ Please specify a valid text channel!", ephemeral=True)
+            return
         
-        await ctx.send(embed=embed)
-        print(f"[LOGS] Log channel set to #{target_channel.name} in {ctx.guild.name}")
+        # Check bot permissions in the target channel
+        bot_permissions = target_channel.permissions_for(ctx.guild.me)
+        if not bot_permissions.send_messages or not bot_permissions.embed_links:
+            await ctx.send(
+                f"❌ I don't have permission to send messages or embeds in {target_channel.mention}!\n"
+                "Please give me `Send Messages` and `Embed Links` permissions.",
+                ephemeral=True
+            )
+            return
+        
+        # Save the channel ID to per-guild config
+        success = guild_config.set_log_channel_id(ctx.guild.id, target_channel.id)
+        
+        if success:
+            embed = discord.Embed(
+                title="📋 Log Channel Set",
+                color=discord.Color.green(),
+                description=f"Logs will now be sent to {target_channel.mention}\n\n"
+                           "✅ This setting is saved and will persist across bot restarts."
+            )
+            await ctx.send(embed=embed)
+            print(f"[LOGS] Log channel set to #{target_channel.name} (ID: {target_channel.id}) in {ctx.guild.name}")
+        else:
+            await ctx.send("❌ Failed to save log channel configuration. Please try again.", ephemeral=True)
     
-    @commands.command(name="testlog")
+    @commands.hybrid_command(name="testlog", description="Send a test message to the log channel")
     @commands.has_permissions(administrator=True)
     @commands.guild_only()
     async def test_log(self, ctx: commands.Context) -> None:
         """
         Send a test message to the log channel.
         
-        Usage: !testlog
+        Usage: !testlog or /testlog
         """
+        log_channel = self._get_log_channel(ctx.guild)
+        
+        # Provide helpful feedback about where logs are going
+        if log_channel is None:
+            await ctx.send(
+                "❌ **No log channel configured!**\n\n"
+                f"Use `/setlogchannel` or `{config.prefix}setlogchannel` to set one.\n"
+                f"Alternatively, create a channel named `{self.fallback_channel_name}`.",
+                ephemeral=True
+            )
+            return
+        
         embed = discord.Embed(
             title="🧪 Test Log Message",
             color=discord.Color.purple(),
@@ -239,20 +280,73 @@ class Logs(commands.Cog):
             timestamp=datetime.now(timezone.utc)
         )
         embed.add_field(name="Triggered by", value=ctx.author.mention, inline=True)
-        embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)
+        embed.add_field(name="From Channel", value=ctx.channel.mention, inline=True)
+        embed.add_field(name="Log Channel", value=log_channel.mention, inline=True)
         
         success = await self._send_log(ctx.guild, embed)
         
         if success:
-            await ctx.send("✅ Test log sent successfully! Check the log channel.")
+            response_embed = discord.Embed(
+                title="✅ Test Log Sent",
+                color=discord.Color.green(),
+                description=f"Test log sent successfully to {log_channel.mention}!"
+            )
+            await ctx.send(embed=response_embed)
         else:
             await ctx.send(
-                f"❌ Could not send test log. Make sure a channel named "
-                f"`{self.log_channel_name}` exists and I have permission to send messages there."
+                f"❌ Could not send test log to {log_channel.mention}.\n"
+                "Please check that I have `Send Messages` and `Embed Links` permissions in that channel.",
+                ephemeral=True
             )
+    
+    @commands.hybrid_command(name="logconfig", description="View the current log channel configuration")
+    @commands.has_permissions(administrator=True)
+    @commands.guild_only()
+    async def log_config(self, ctx: commands.Context) -> None:
+        """
+        View the current log channel configuration.
+        
+        Usage: !logconfig or /logconfig
+        """
+        log_channel = self._get_log_channel(ctx.guild)
+        channel_id = guild_config.get_log_channel_id(ctx.guild.id)
+        
+        embed = discord.Embed(
+            title="📋 Log Configuration",
+            color=discord.Color.blue()
+        )
+        
+        if log_channel:
+            # Check permissions
+            perms = log_channel.permissions_for(ctx.guild.me)
+            status = "✅ Ready" if (perms.send_messages and perms.embed_links) else "⚠️ Missing permissions"
+            
+            embed.add_field(
+                name="Current Log Channel",
+                value=f"{log_channel.mention} (ID: {log_channel.id})",
+                inline=False
+            )
+            embed.add_field(name="Status", value=status, inline=True)
+            
+            if channel_id:
+                embed.add_field(name="Configuration", value="✅ Saved to guild config", inline=True)
+            else:
+                embed.add_field(
+                    name="Configuration",
+                    value=f"⚠️ Using fallback channel name: `{self.fallback_channel_name}`",
+                    inline=True
+                )
+        else:
+            embed.description = (
+                "❌ **No log channel configured!**\n\n"
+                f"Use `/setlogchannel` or `{config.prefix}setlogchannel` to set one."
+            )
+        
+        await ctx.send(embed=embed)
     
     @set_log_channel.error
     @test_log.error
+    @log_config.error
     async def log_command_error(self, ctx: commands.Context, error: commands.CommandError) -> None:
         """Handle errors for log commands."""
         if isinstance(error, commands.MissingPermissions):

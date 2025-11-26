@@ -79,7 +79,7 @@ from config import config
 
 class DiscordBot(commands.Bot):
     """
-    Main bot class with automatic cog loading and reconnection logic.
+    Main bot class with automatic cog loading, slash command support, and reconnection logic.
     """
     
     def __init__(self) -> None:
@@ -99,6 +99,7 @@ class DiscordBot(commands.Bot):
         
         self.config = config
         self._cogs_loaded: list[str] = []
+        self._synced: bool = False
     
     async def setup_hook(self) -> None:
         """
@@ -153,12 +154,23 @@ class DiscordBot(commands.Bot):
         print(f"[BOT] Connected to {len(self.guilds)} guild(s)")
         print(f"[BOT] Command prefix: {config.prefix}")
         print(f"[BOT] Cogs loaded: {len(self._cogs_loaded)}")
+        
+        # Sync slash commands (only once per bot lifetime)
+        if not self._synced:
+            try:
+                print("[BOT] Syncing slash commands...")
+                synced = await self.tree.sync()
+                print(f"[BOT] Synced {len(synced)} slash command(s)")
+                self._synced = True
+            except discord.HTTPException as e:
+                print(f"[BOT] Failed to sync slash commands: {e}")
+        
         print("=" * 50)
         
         # Set bot status
         activity = discord.Activity(
             type=discord.ActivityType.watching,
-            name=f"{config.prefix}help for commands"
+            name=f"{config.prefix}help | /help"
         )
         await self.change_presence(activity=activity)
     

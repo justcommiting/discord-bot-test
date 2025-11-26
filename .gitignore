@@ -50,3 +50,6 @@ Thumbs.db
 
 # Local config overrides
 data/config.local.json
+
+# Guild-specific configuration (runtime data)
+data/guilds/
