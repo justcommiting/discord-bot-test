@@ -1,0 +1,29 @@
+{
+    "bot": {
+        "token": "YOUR_BOT_TOKEN_HERE",
+        "prefix": "!",
+        "description": "A modular Discord bot"
+    },
+    "admin_roles": [
+        "Admin",
+        "Moderator"
+    ],
+    "features": {
+        "moderation": {
+            "enabled": true,
+            "mute_role_name": "Muted"
+        },
+        "tickets": {
+            "enabled": true,
+            "category_name": "Support Tickets",
+            "support_role": "Support"
+        },
+        "logs": {
+            "enabled": true,
+            "log_channel_name": "bot-logs"
+        },
+        "fun": {
+            "enabled": true
+        }
+    }
+}
