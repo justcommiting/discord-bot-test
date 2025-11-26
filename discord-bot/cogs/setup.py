@@ -104,9 +104,15 @@ class Setup(commands.Cog):
     """
     
     # Define required roles with their properties
+    # Keys used for identification - these must match the keys used in guild_config
+    MUTED_ROLE_KEY = "muted"
+    SUPPORT_ROLE_KEY = "support"
+    LOGS_CHANNEL_KEY = "logs"
+    TICKET_CATEGORY_KEY = "ticket_category"
+    
     REQUIRED_ROLES = [
         {
-            "key": "muted",
+            "key": "muted",  # Matches MUTED_ROLE_KEY
             "name_config": "mute_role_name",
             "default_name": "Muted",
             "feature": "moderation",
@@ -119,7 +125,7 @@ class Setup(commands.Cog):
             )
         },
         {
-            "key": "support",
+            "key": "support",  # Matches SUPPORT_ROLE_KEY
             "name_config": "support_role",
             "default_name": "Support",
             "feature": "tickets",
@@ -243,7 +249,7 @@ class Setup(commands.Cog):
             )
             
             # If this is the muted role, set up channel permissions
-            if role_config["key"] == "muted":
+            if role_config["key"] == self.MUTED_ROLE_KEY:
                 for channel in guild.text_channels:
                     try:
                         await channel.set_permissions(
@@ -253,7 +259,9 @@ class Setup(commands.Cog):
                             reason="Muted role setup"
                         )
                     except discord.Forbidden:
-                        pass  # Skip channels we can't modify
+                        # Expected when bot lacks Manage Channels permission for this channel
+                        # The mute role will still work for channels where permissions were set
+                        pass
                 
                 for channel in guild.voice_channels:
                     try:
@@ -263,6 +271,7 @@ class Setup(commands.Cog):
                             reason="Muted role setup"
                         )
                     except discord.Forbidden:
+                        # Expected when bot lacks Manage Channels permission for this channel
                         pass
             
             # Save role ID to guild config
@@ -306,7 +315,7 @@ class Setup(commands.Cog):
                 )
             
             # Save channel ID to guild config
-            if channel_config["key"] == "logs":
+            if channel_config["key"] == self.LOGS_CHANNEL_KEY:
                 guild_config.set_log_channel_id(guild.id, channel.id)
             else:
                 guild_config.set(guild.id, f"channels.{channel_config['key']}", channel.id)

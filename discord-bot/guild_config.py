@@ -8,7 +8,6 @@ Configuration is stored in JSON files within the data/guilds/ directory.
 """
 
 import json
-import os
 from pathlib import Path
 from typing import Any, Optional
 
@@ -244,9 +243,9 @@ class GuildConfig:
         
         if guild_file.exists():
             try:
-                os.remove(guild_file)
+                guild_file.unlink()
                 return True
-            except IOError as e:
+            except OSError as e:
                 print(f"[GUILD_CONFIG] Error deleting config for guild {guild_id}: {e}")
                 return False
         
