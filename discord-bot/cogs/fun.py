@@ -3,6 +3,8 @@ Fun Cog - Entertainment Commands
 
 This cog provides fun and utility commands for server members.
 
+Supports both slash commands and prefix commands.
+
 HOW TO CUSTOMIZE:
 -----------------
 - Add new fun commands following the same pattern
@@ -12,6 +14,7 @@ HOW TO CUSTOMIZE:
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 import random
 
 # Import configuration
@@ -61,7 +64,7 @@ class Fun(commands.Cog):
             "Very doubtful."
         ]
     
-    @commands.command(name="ping")
+    @commands.hybrid_command(name="ping", description="Check the bot's latency")
     async def ping(self, ctx: commands.Context) -> None:
         """
         Check the bot's latency to Discord.
@@ -90,7 +93,7 @@ class Fun(commands.Cog):
         
         await ctx.send(embed=embed)
     
-    @commands.command(name="coinflip", aliases=["flip", "coin"])
+    @commands.hybrid_command(name="coinflip", aliases=["flip", "coin"], description="Flip a coin")
     async def coinflip(self, ctx: commands.Context) -> None:
         """
         Flip a coin.
@@ -108,7 +111,8 @@ class Fun(commands.Cog):
         
         await ctx.send(embed=embed)
     
-    @commands.command(name="roll", aliases=["dice"])
+    @commands.hybrid_command(name="roll", aliases=["dice"], description="Roll a dice")
+    @app_commands.describe(sides="Number of sides on the dice (default: 6)")
     async def roll_dice(
         self,
         ctx: commands.Context,
@@ -138,7 +142,8 @@ class Fun(commands.Cog):
         
         await ctx.send(embed=embed)
     
-    @commands.command(name="choose", aliases=["pick"])
+    @commands.hybrid_command(name="choose", aliases=["pick"], description="Choose between options")
+    @app_commands.describe(options="Options separated by commas or 'or'")
     async def choose(
         self,
         ctx: commands.Context,
@@ -179,7 +184,8 @@ class Fun(commands.Cog):
         
         await ctx.send(embed=embed)
     
-    @commands.command(name="8ball", aliases=["eightball", "magic8ball"])
+    @commands.hybrid_command(name="8ball", aliases=["eightball", "magic8ball"], description="Ask the magic 8-ball")
+    @app_commands.describe(question="Your question for the 8-ball")
     async def eight_ball(
         self,
         ctx: commands.Context,
@@ -203,7 +209,7 @@ class Fun(commands.Cog):
         
         await ctx.send(embed=embed)
     
-    @commands.command(name="serverinfo", aliases=["server"])
+    @commands.hybrid_command(name="serverinfo", aliases=["server"], description="Display server information")
     @commands.guild_only()
     async def server_info(self, ctx: commands.Context) -> None:
         """
@@ -232,7 +238,8 @@ class Fun(commands.Cog):
         
         await ctx.send(embed=embed)
     
-    @commands.command(name="userinfo", aliases=["user", "whois"])
+    @commands.hybrid_command(name="userinfo", aliases=["user", "whois"], description="Display user information")
+    @app_commands.describe(member="The member to get info about (defaults to yourself)")
     @commands.guild_only()
     async def user_info(
         self,

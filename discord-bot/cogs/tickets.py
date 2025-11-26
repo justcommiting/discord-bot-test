@@ -4,6 +4,8 @@ Tickets Cog - Support Ticket System
 This cog provides a ticket system for user support. Users can create
 private support channels that only they and support staff can see.
 
+Supports both slash commands and prefix commands.
+
 HOW TO CUSTOMIZE:
 -----------------
 - Change the ticket category name in data/config.json under features.tickets.category_name
@@ -13,6 +15,7 @@ HOW TO CUSTOMIZE:
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 from typing import Optional
 
 # Import configuration
@@ -143,7 +146,8 @@ class Tickets(commands.Cog):
         
         return channel
     
-    @commands.command(name="ticket")
+    @commands.hybrid_command(name="ticket", description="Create a new support ticket")
+    @app_commands.describe(topic="The topic or reason for the ticket")
     @commands.guild_only()
     async def create_ticket(
         self,
@@ -215,7 +219,7 @@ class Tickets(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"❌ Failed to create ticket: {e}")
     
-    @commands.command(name="close")
+    @commands.hybrid_command(name="close", description="Close the current support ticket")
     @commands.guild_only()
     async def close_ticket(self, ctx: commands.Context) -> None:
         """
@@ -263,7 +267,8 @@ class Tickets(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"❌ Failed to close ticket: {e}")
     
-    @commands.command(name="adduser")
+    @commands.hybrid_command(name="adduser", description="Add a user to the current ticket")
+    @app_commands.describe(member="The member to add to the ticket")
     @commands.guild_only()
     async def add_user_to_ticket(
         self,

@@ -4,6 +4,8 @@ Moderation Cog - Ban, Kick, and Mute Commands
 This cog provides basic moderation functionality for server administrators.
 Commands require appropriate permissions to use.
 
+Supports both slash commands and prefix commands.
+
 HOW TO CUSTOMIZE:
 -----------------
 - Change the mute role name in data/config.json under features.moderation.mute_role_name
@@ -13,6 +15,7 @@ HOW TO CUSTOMIZE:
 
 import discord
 from discord.ext import commands
+from discord import app_commands
 from typing import Optional
 
 # Import configuration
@@ -78,7 +81,8 @@ class Moderation(commands.Cog):
         
         return mute_role
     
-    @commands.command(name="kick")
+    @commands.hybrid_command(name="kick", description="Kick a member from the server")
+    @app_commands.describe(member="The member to kick", reason="Reason for the kick")
     @commands.has_permissions(kick_members=True)
     @commands.guild_only()
     async def kick_member(
@@ -127,7 +131,8 @@ class Moderation(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"❌ Failed to kick member: {e}")
     
-    @commands.command(name="ban")
+    @commands.hybrid_command(name="ban", description="Ban a member from the server")
+    @app_commands.describe(member="The member to ban", reason="Reason for the ban")
     @commands.has_permissions(ban_members=True)
     @commands.guild_only()
     async def ban_member(
@@ -176,7 +181,8 @@ class Moderation(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"❌ Failed to ban member: {e}")
     
-    @commands.command(name="mute")
+    @commands.hybrid_command(name="mute", description="Mute a member")
+    @app_commands.describe(member="The member to mute", reason="Reason for the mute")
     @commands.has_permissions(manage_roles=True)
     @commands.guild_only()
     async def mute_member(
@@ -232,7 +238,8 @@ class Moderation(commands.Cog):
         except discord.HTTPException as e:
             await ctx.send(f"❌ Failed to mute member: {e}")
     
-    @commands.command(name="unmute")
+    @commands.hybrid_command(name="unmute", description="Unmute a member")
+    @app_commands.describe(member="The member to unmute")
     @commands.has_permissions(manage_roles=True)
     @commands.guild_only()
     async def unmute_member(
