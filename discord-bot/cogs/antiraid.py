@@ -147,6 +147,9 @@ class AntiRaid(commands.Cog):
     - Automated raid response
     """
     
+    # Maximum users that can be banned at once via massban command
+    MAX_MASS_BAN_LIMIT = 50
+    
     # Default configuration values
     DEFAULT_CONFIG = {
         "enabled": True,
@@ -682,8 +685,8 @@ class AntiRaid(commands.Cog):
             await ctx.send("❌ No valid user IDs provided!")
             return
         
-        if len(ids) > 50:
-            await ctx.send("❌ Maximum 50 users can be banned at once!")
+        if len(ids) > self.MAX_MASS_BAN_LIMIT:
+            await ctx.send(f"❌ Maximum {self.MAX_MASS_BAN_LIMIT} users can be banned at once!")
             return
         
         # Confirmation
@@ -723,7 +726,7 @@ class AntiRaid(commands.Cog):
                     await ctx.guild.ban(
                         discord.Object(id=user_id),
                         reason=f"Mass ban by {ctx.author}",
-                        delete_message_seconds=86400  # Delete 24h of messages
+                        delete_message_days=1  # Delete 24h of messages
                     )
                     banned_count += 1
                 except discord.HTTPException:

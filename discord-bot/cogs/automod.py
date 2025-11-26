@@ -165,6 +165,9 @@ class SpamTracker:
     Monitors message timestamps to detect rapid-fire messaging.
     """
     
+    # Maximum length of content to track for duplicates
+    MAX_CONTENT_LENGTH = 100
+    
     def __init__(self) -> None:
         """Initialize the spam tracker."""
         # Structure: {guild_id: {user_id: [message_timestamps]}}
@@ -204,7 +207,7 @@ class SpamTracker:
         self._messages[guild_id][user_id].append(now)
         
         # Track content for duplicate detection
-        content_hash = content.lower().strip()[:100]  # Normalize and limit
+        content_hash = content.lower().strip()[:self.MAX_CONTENT_LENGTH]  # Normalize and limit
         self._content_cache[guild_id][user_id][content_hash] += 1
         
         return (
@@ -375,7 +378,7 @@ class AutoMod(commands.Cog):
                 try:
                     await member.ban(
                         reason=f"AutoMod: {reason} - Exceeded warning threshold ({warning_count} warnings)",
-                        delete_message_seconds=86400  # Delete last 24h of messages
+                        delete_message_days=1  # Delete last 24h of messages
                     )
                     action_taken = f"🔨 **Banned** (Warning #{warning_count})"
                     embed_color = discord.Color.dark_red()
