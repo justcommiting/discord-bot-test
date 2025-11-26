@@ -1,0 +1,5 @@
+# Discord Bot Requirements
+# Python 3.11+ required
+
+discord.py==2.3.2
+python-dotenv==1.0.0
