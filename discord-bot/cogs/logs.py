@@ -15,7 +15,7 @@ HOW TO CUSTOMIZE:
 
 import discord
 from discord.ext import commands
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 # Import configuration
@@ -89,7 +89,7 @@ class Logs(commands.Cog):
         embed = discord.Embed(
             title="📥 Member Joined",
             color=discord.Color.green(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -108,7 +108,7 @@ class Logs(commands.Cog):
         embed = discord.Embed(
             title="📤 Member Left",
             color=discord.Color.red(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         
         embed.set_thumbnail(url=member.display_avatar.url)
@@ -131,7 +131,7 @@ class Logs(commands.Cog):
         embed = discord.Embed(
             title="🗑️ Message Deleted",
             color=discord.Color.orange(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         
         embed.set_author(name=str(message.author), icon_url=message.author.display_avatar.url)
@@ -167,7 +167,7 @@ class Logs(commands.Cog):
         embed = discord.Embed(
             title="✏️ Message Edited",
             color=discord.Color.blue(),
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         
         embed.set_author(name=str(before.author), icon_url=before.author.display_avatar.url)
@@ -236,7 +236,7 @@ class Logs(commands.Cog):
             title="🧪 Test Log Message",
             color=discord.Color.purple(),
             description="This is a test log message to verify the logging system is working.",
-            timestamp=datetime.utcnow()
+            timestamp=datetime.now(timezone.utc)
         )
         embed.add_field(name="Triggered by", value=ctx.author.mention, inline=True)
         embed.add_field(name="Channel", value=ctx.channel.mention, inline=True)

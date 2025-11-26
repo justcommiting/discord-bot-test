@@ -93,8 +93,8 @@ class Tickets(commands.Cog):
         category = await self._get_or_create_category(guild)
         support_role = self._get_support_role(guild)
         
-        # Create channel name (sanitize username)
-        channel_name = f"ticket-{user.name.lower().replace(' ', '-')}-{user.discriminator}"
+        # Create channel name (sanitize username and use user ID for uniqueness)
+        channel_name = f"ticket-{user.name.lower().replace(' ', '-')}-{user.id}"
         
         # Set up permissions
         overwrites = {
@@ -161,7 +161,7 @@ class Tickets(commands.Cog):
         category = discord.utils.get(ctx.guild.categories, name=self.category_name)
         if category:
             for channel in category.text_channels:
-                if channel.name.endswith(f"-{ctx.author.discriminator}"):
+                if channel.name.endswith(f"-{ctx.author.id}"):
                     await ctx.send(
                         f"❌ You already have an open ticket: {channel.mention}\n"
                         "Please close your existing ticket before creating a new one."
@@ -231,7 +231,7 @@ class Tickets(commands.Cog):
             return
         
         # Check if user has permission to close
-        is_ticket_owner = ctx.channel.name.endswith(f"-{ctx.author.discriminator}")
+        is_ticket_owner = ctx.channel.name.endswith(f"-{ctx.author.id}")
         is_admin = any(role.name in config.admin_roles for role in ctx.author.roles)
         support_role = self._get_support_role(ctx.guild)
         is_support = support_role and support_role in ctx.author.roles
